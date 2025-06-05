@@ -84,11 +84,6 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: CLICKHOUSE_PASSWORD
-            - name: S3_TRACE_PAYLOADS_BUCKET
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: S3_TRACE_PAYLOADS_BUCKET
             - name: AEAD_SECRET_KEY
               valueFrom:
                 secretKeyRef:

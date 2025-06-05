@@ -46,7 +46,7 @@ secrets:
     SHARED_SECRET_TOKEN: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     AWS_ACCESS_KEY_ID: "<AWS_ACCESS_KEY_ID>"
     AWS_SECRET_ACCESS_KEY: "<AWS_SECRET_ACCESS_KEY>"
-    S3_TRACE_PAYLOADS_BUCKET: "bucket-name"
+    S3_TRACE_PAYLOADS_BUCKET: "<s3-bucket-name>"
 
 # Frontend configuration
 frontend:
@@ -72,8 +72,7 @@ frontend:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
   env:
     backendUrl: "http://app-server-service:8000"
-    nextauthUrl: "http://k8s-default-frontend-ca9f8ebae0-784748484.us-east-1.elb.amazonaws.com"
-    nextPublicUrl: "http://k8s-default-frontend-ca9f8ebae0-784748484.us-east-1.elb.amazonaws.com"
+    nextauthUrl: "<YOUR_NEXT_SERVER_URL>"
     redisUrl: "redis://redis-service:6379"
 
 # App Server configuration
