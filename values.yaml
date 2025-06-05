@@ -35,7 +35,6 @@ secrets:
   # All secret values - these should be provided via values files or --set flags
   data:
     NEXTAUTH_SECRET: "abc"
-    NEXT_PUBLIC_URL: "https://www.lmnr.ai"
     RABBITMQ_ERLANG_COOKIE: "rabbitmq-erlang-cookie"
     RABBITMQ_DEFAULT_USER: "admin"
     RABBITMQ_DEFAULT_PASS: "rabbitmq123"

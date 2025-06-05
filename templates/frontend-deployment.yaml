@@ -30,8 +30,6 @@ spec:
               value: {{ .Values.frontend.env.nextauthUrl }}
             - name: ENVIRONMENT
               value: {{ .Values.global.environment }}
-            - name: NEXT_PUBLIC_URL
-              value: {{ .Values.frontend.env.nextPublicUrl }}
             - name: REDIS_URL
               value: {{ .Values.frontend.env.redisUrl }}
             - name: DATABASE_URL
