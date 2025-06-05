@@ -1,0 +1,101 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.images.repository }}/{{ .Values.images.frontend.name }}:{{ .Values.images.frontend.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          env:
+            - name: BACKEND_URL
+              value: {{ .Values.frontend.env.backendUrl }}
+            - name: NEXTAUTH_URL
+              value: {{ .Values.frontend.env.nextauthUrl }}
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment }}
+            - name: NEXT_PUBLIC_URL
+              value: {{ .Values.frontend.env.nextPublicUrl }}
+            - name: REDIS_URL
+              value: {{ .Values.frontend.env.redisUrl }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DATABASE_URL
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: NEXTAUTH_SECRET
+            - name: CLICKHOUSE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_URL
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_USER
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_PASSWORD
+            - name: S3_TRACE_PAYLOADS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: S3_TRACE_PAYLOADS_BUCKET
+            - name: AEAD_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AEAD_SECRET_KEY
+            - name: SHARED_SECRET_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SHARED_SECRET_TOKEN
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_TRACE_PAYLOADS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: S3_TRACE_PAYLOADS_BUCKET
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: alpha.eksctl.io/nodegroup-name
+                operator: In
+                values:
+                - {{ .Values.global.nodeGroupName }}
+{{- end }} 

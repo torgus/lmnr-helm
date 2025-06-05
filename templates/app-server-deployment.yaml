@@ -1,0 +1,150 @@
+{{- if .Values.appServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-server
+  labels:
+    app: app-server
+spec:
+  replicas: {{ .Values.appServer.replicaCount }}
+  selector:
+    matchLabels:
+      app: app-server
+  template:
+    metadata:
+      labels:
+        app: app-server
+    spec:
+      containers:
+        - name: app-server
+          image: {{ .Values.images.repository }}/{{ .Values.images.appServer.name }}:{{ .Values.images.appServer.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+          resources:
+            {{- toYaml .Values.appServer.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          env:
+            - name: PORT
+              value: {{ .Values.appServer.env.port | quote }}
+            - name: GRPC_PORT
+              value: {{ .Values.appServer.env.grpcPort | quote }}
+            - name: DATABASE_MAX_CONNECTIONS
+              value: {{ .Values.appServer.env.databaseMaxConnections | quote }}
+            - name: NUM_WORKERS_PER_THREAD
+              value: {{ .Values.appServer.env.numWorkersPerThread | quote }}
+            - name: NUM_BROWSER_EVENTS_WORKERS_PER_THREAD
+              value: {{ .Values.appServer.env.numBrowserEventsWorkersPerThread | quote }}
+            - name: BROWSER_EVENTS_MAX_BATCH_SIZE
+              value: {{ .Values.appServer.env.browserEventsMaxBatchSize | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.appServer.env.redisUrl }}
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment }}
+            - name: HTTP_PAYLOAD_LIMIT
+              value: {{ .Values.appServer.env.httpPayloadLimit | quote }}
+            - name: GRPC_PAYLOAD_LIMIT
+              value: {{ .Values.appServer.env.grpcPayloadLimit | quote }}
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: RABBITMQ_URL
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DATABASE_URL
+            - name: CLICKHOUSE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_URL
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_USER
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CLICKHOUSE_PASSWORD
+            - name: S3_TRACE_PAYLOADS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: S3_TRACE_PAYLOADS_BUCKET
+            - name: AEAD_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AEAD_SECRET_KEY
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_TRACE_PAYLOADS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: S3_TRACE_PAYLOADS_BUCKET
+        - name: nginx
+          image: {{ .Values.images.nginx.repository }}:{{ .Values.images.nginx.tag }}
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            {{- toYaml .Values.appServer.nginx.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: app-server-nginx-config
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: alpha.eksctl.io/nodegroup-name
+                operator: In
+                values:
+                - {{ .Values.global.nodeGroupName }}
+{{- end }} 

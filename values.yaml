@@ -1,0 +1,213 @@
+# Global configuration
+global:
+  environment: "FULL"
+  nodeGroupName: "t3a-xlarge"
+
+# Image configuration
+images:
+  repository: "ghcr.io/lmnr-ai"
+  pullPolicy: Always
+  frontend:
+    name: "frontend"
+    tag: "latest"
+  appServer:
+    name: "app-server"
+    tag: "latest"
+  redis:
+    repository: "valkey/valkey"
+    tag: "latest"
+  rabbitmq:
+    repository: "rabbitmq"
+    tag: "latest"
+  nginx:
+    repository: "nginx"
+    tag: "latest"
+  postgres:
+    repository: "postgres"
+    tag: "15"
+  clickhouse:
+    repository: "clickhouse/clickhouse-server"
+    tag: "latest"
+
+# Secrets configuration (K8s secrets)
+secrets:
+  enabled: true
+  # All secret values - these should be provided via values files or --set flags
+  data:
+    NEXTAUTH_SECRET: "abc"
+    NEXT_PUBLIC_URL: "https://www.lmnr.ai"
+    RABBITMQ_ERLANG_COOKIE: "rabbitmq-erlang-cookie"
+    RABBITMQ_DEFAULT_USER: "admin"
+    RABBITMQ_DEFAULT_PASS: "rabbitmq123"
+    CLICKHOUSE_USER: "default"
+    CLICKHOUSE_PASSWORD: "clickhouse123"
+    POSTGRES_USER: "lmnr"
+    POSTGRES_PASSWORD: "lmnr123"
+    AEAD_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    SHARED_SECRET_TOKEN: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    AWS_ACCESS_KEY_ID: "<AWS_ACCESS_KEY_ID>"
+    AWS_SECRET_ACCESS_KEY: "<AWS_SECRET_ACCESS_KEY>"
+    S3_TRACE_PAYLOADS_BUCKET: "bucket-name"
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "1Gi"
+    limits:
+      cpu: "2.0"
+      memory: "4Gi"
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  ingress:
+    enabled: true
+    className: "alb"
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+  env:
+    backendUrl: "http://app-server-service:8000"
+    nextauthUrl: "http://k8s-default-frontend-ca9f8ebae0-784748484.us-east-1.elb.amazonaws.com"
+    nextPublicUrl: "http://k8s-default-frontend-ca9f8ebae0-784748484.us-east-1.elb.amazonaws.com"
+    redisUrl: "redis://redis-service:6379"
+
+# App Server configuration
+appServer:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "8Gi"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  loadBalancer:
+    enabled: true
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+  nginx:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "300m"
+        memory: "256Mi"
+  env:
+    port: "8000"
+    grpcPort: "8001"
+    databaseMaxConnections: "96"
+    numWorkersPerThread: "8"
+    numBrowserEventsWorkersPerThread: "8"
+    browserEventsMaxBatchSize: "64"
+    httpPayloadLimit: "26214400"
+    grpcPayloadLimit: "26214400"
+    redisUrl: "redis://redis-service:6379"
+
+# PostgreSQL configuration
+postgres:
+  enabled: true
+  replicaCount: 1
+  database: "lmnr"
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  persistence:
+    enabled: true
+    storageClass: "ebs-sc"
+    size: "20Gi"
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+
+# ClickHouse configuration
+clickhouse:
+  enabled: true
+  replicaCount: 1
+  database: "lmnr"
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  persistence:
+    enabled: true
+    storageClass: "ebs-sc"
+    size: "50Gi"
+  service:
+    type: ClusterIP
+    port: 8123
+    targetPort: 8123
+    nativePort: 9000
+
+# Redis configuration
+redis:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  service:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "4"
+      memory: "4Gi"
+  persistence:
+    enabled: true
+    storageClass: "ebs-sc"
+    size: "5Gi"
+  service:
+    type: ClusterIP
+    amqpPort: 5672
+  headlessService:
+    enabled: true
+  config:
+    maxMessageSize: 78643200
+
+# Storage configuration
+storage:
+  storageClass:
+    name: "ebs-sc"
+    provisioner: "kubernetes.io/aws-ebs"
+    type: "gp3"
+    reclaimPolicy: "Retain"
+    volumeBindingMode: "WaitForFirstConsumer"
+    zones:
+      - "us-east-1b"
+      - "us-east-1f" 
